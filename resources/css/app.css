@@ -1,0 +1,221 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --color-primary: #7f13ec;
+    --color-background-light: #ffffff;
+    --color-background-dark: #191022;
+}
+
+:root {
+    --primary: #7f13ec;
+    --background-light: #ffffff;
+    --background-dark: #191022;
+}
+
+/* -------------- Shared Styles -------------- */
+.gradient-text {
+    background: linear-gradient(to right, #7f13ec, #c46ef8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+.float { animation: float 3s ease-in-out infinite; }
+
+/* Stack animation for Solution section */
+@keyframes stackShift {
+    0% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-8px) rotate(0deg); }
+    100% { transform: translateY(0) rotate(-1deg); }
+}
+.stack-card { animation: stackShift 4s ease-in-out infinite; }
+.stack-card:nth-child(2) { animation-delay: .15s; }
+.stack-card:nth-child(3) { animation-delay: .3s; }
+.stack-card:nth-child(4) { animation-delay: .45s; }
+
+/* Utility: 8px radius everywhere */
+.rounded-8 { border-radius: .5rem; }
+.video-style {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.new-home_heading-icon {
+    width: 50px;
+}
+
+.video-container {
+    transform: perspective(1000px) rotateX(15deg) rotateY(-10deg);
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease-out;
+    transform-origin: center center;
+    will-change: transform, box-shadow;
+    border: 2px solid var(--background-dark);
+}
+
+/* Fixed hero section height */
+.hero-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    margin-bottom: 0 !important;
+}
+
+/* Ensure proper section spacing */
+.section-spacing {
+    margin-bottom: 6rem;
+}
+
+/* Header backdrop blur enhancement */
+.header-blur {
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Stacking cards animation */
+.stacking-container {
+    position: relative;
+    min-height: 150vh;
+}
+
+.stacking-card {
+    position: sticky;
+    transition: transform 0.5s ease-out, box-shadow 0.3s ease-out;
+    margin-bottom: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stacking-card:nth-of-type(1) { top: 120px; z-index: 1; }
+.stacking-card:nth-of-type(2) { top: 140px; z-index: 2; }
+.stacking-card:nth-of-type(3) { top: 160px; z-index: 3; }
+.stacking-card:nth-of-type(4) { top: 170px; z-index: 4; }
+
+.stacking-container.fully-stacked .stacking-card {
+    position: sticky;
+    transform: scale(1) !important;
+    box-shadow: 0 10px 25px -12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stacking-container.fully-stacked .stacking-card:nth-of-type(1) { top: 120px; }
+.stacking-container.fully-stacked .stacking-card:nth-of-type(2) { top: 130px; }
+.stacking-container.fully-stacked .stacking-card:nth-of-type(3) { top: 140px; }
+.stacking-container.fully-stacked .stacking-card:nth-of-type(4) { top: 150px; }
+
+.stacking-section {
+    padding-bottom: 30vh;
+}
+
+/* Minimal scrollbar for chat */
+.chat-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 9999px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+}
+
+/* Firefox */
+.chat-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+/* Chat markdown prose styling */
+.prose h1, .prose h2, .prose h3 {
+    color: #1f2937;
+}
+.prose strong {
+    font-weight: 700;
+    color: #111827;
+}
+.prose code {
+    font-size: 0.875em;
+}
+.prose pre {
+    font-size: 0.875em;
+}
+.prose pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    color: inherit;
+}
+.prose ul, .prose ol {
+    padding-left: 0;
+}
+.prose p {
+    margin: 0;
+}
+.prose p + p {
+    margin-top: 0.5rem;
+}
+
+/* Flashcard 3D flip */
+.flashcard-container {
+    perspective: 1000px;
+}
+.flashcard-inner {
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+.flashcard-inner.flipped {
+    transform: rotateY(180deg);
+}
+.flashcard-front, .flashcard-back {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.flashcard-back {
+    transform: rotateY(180deg);
+}
+
+/* AI Shimmer Gradient Animation */
+@keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 12px rgba(124, 58, 237, 0.3), 0 0 24px rgba(124, 58, 237, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.5), 0 0 40px rgba(124, 58, 237, 0.2); }
+}
+
+.ai-button {
+    background: linear-gradient(
+        90deg,
+        #7C3AED 0%,
+        #8B5CF6 25%,
+        #A78BFA 40%,
+        #C4B5FD 50%,
+        #A78BFA 60%,
+        #8B5CF6 75%,
+        #7C3AED 100%
+    );
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite, pulse-glow 2s ease-in-out infinite;
+    transition: all 0.3s ease;
+}
+
+.ai-button:hover {
+    animation: shimmer 1.5s linear infinite, pulse-glow 1s ease-in-out infinite;
+    transform: translateY(-1px);
+    box-shadow: 0 0 25px rgba(124, 58, 237, 0.5), 0 0 50px rgba(124, 58, 237, 0.2);
+}
