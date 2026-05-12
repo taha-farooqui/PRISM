@@ -265,6 +265,8 @@
                                              x-data="{
                                                  videoStatus: message.status || 'processing',
                                                  videoUrl: message.video_url || null,
+                                                 subtitleUrl: message.subtitle_url || null,
+                                                 subtitlesOn: false,
                                                  elapsedSeconds: 0,
                                                  errorMsg: message.error || '',
                                                  progressPhase: 'Initializing',
@@ -296,6 +298,7 @@
 
                                                          if (data.status === 'completed') {
                                                              this.videoUrl = data.video_url;
+                                                             this.subtitleUrl = data.subtitle_url || null;
                                                              this.progressPercent = 100;
                                                              clearInterval(this.pollInterval);
                                                              clearInterval(this.timeInterval);
@@ -305,6 +308,15 @@
                                                              clearInterval(this.timeInterval);
                                                          }
                                                      } catch (e) {}
+                                                 },
+
+                                                 toggleSubtitles($refs) {
+                                                     this.subtitlesOn = !this.subtitlesOn;
+                                                     const video = $refs.chatVideoPlayer;
+                                                     if (!video) return;
+                                                     for (let i = 0; i < video.textTracks.length; i++) {
+                                                         video.textTracks[i].mode = this.subtitlesOn ? 'showing' : 'hidden';
+                                                     }
                                                  },
 
                                                  formatTime(seconds) {
@@ -389,7 +401,37 @@
                                                         </div>
                                                         <!-- Inline Video Player -->
                                                         <div class="rounded-xl overflow-hidden bg-black mb-3" x-show="videoUrl">
-                                                            <video :src="videoUrl" controls class="w-full" style="max-height: 300px;"></video>
+                                                            <div class="relative">
+                                                                <video
+                                                                    x-ref="chatVideoPlayer"
+                                                                    :src="videoUrl"
+                                                                    controls
+                                                                    crossorigin="anonymous"
+                                                                    class="w-full"
+                                                                    style="max-height: 300px;">
+                                                                    <template x-if="subtitleUrl">
+                                                                        <track
+                                                                            kind="subtitles"
+                                                                            :src="subtitleUrl"
+                                                                            srclang="en"
+                                                                            label="English"
+                                                                            default>
+                                                                    </template>
+                                                                </video>
+                                                                <template x-if="subtitleUrl">
+                                                                    <button
+                                                                        @click="toggleSubtitles($refs)"
+                                                                        class="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold backdrop-blur-sm transition-all opacity-90 hover:opacity-100"
+                                                                        :class="subtitlesOn ? 'bg-white text-gray-900' : 'bg-black/60 text-white border border-white/30'"
+                                                                        :title="subtitlesOn ? 'Hide subtitles' : 'Show subtitles'">
+                                                                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                            <rect x="2" y="6" width="20" height="14" rx="2" ry="2"/>
+                                                                            <path d="M7 12h3M7 16h6M14 12h3M16 16h1"/>
+                                                                        </svg>
+                                                                        <span x-text="subtitlesOn ? 'CC On' : 'CC'"></span>
+                                                                    </button>
+                                                                </template>
+                                                            </div>
                                                         </div>
                                                         <a :href="'/videos/' + message.video_id"
                                                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-medium rounded-xl hover:bg-[#6D28D9] transition-colors">
@@ -628,6 +670,7 @@
                                 topic: data.video.topic,
                                 status: data.video.status,
                                 video_url: data.video.video_url,
+                                subtitle_url: data.video.subtitle_url,
                                 error: data.video.error,
                             });
                         }

@@ -36,11 +36,37 @@ class VideoGenerationService
     {
         $system = <<<'PROMPT'
 You are PRISM, an expert educational animation script writer in the style of 3Blue1Brown.
-You create EXACTLY 3-section video scripts that are SHORT, PUNCHY, and VISUAL-FIRST.
+Your job: write a SHORT, VISUAL-FIRST 3-section script where EVERY sentence is
+LOCKED to a specific visual moment. The narrator says LESS; the screen shows MORE.
 
-OUTPUT FORMAT: Valid JSON object (no markdown, no ```json blocks).
+═══════════════════════════════════════════════════════════════════════
+CORE PRINCIPLE: NARRATION ↔ VISUAL LOCK
+═══════════════════════════════════════════════════════════════════════
 
-STRUCTURE (exactly 3 sections):
+Each section is a list of "beats". Each beat = ONE sentence of narration + ONE
+specific visual moment that the animation MUST show during that sentence.
+
+If the narrator says "imagine an array of 8 numbers", the visual MUST show
+an array of 8 numbered squares — exactly that, not a circle, not a graph.
+
+The narrator NEVER describes something that isn't on screen.
+The screen NEVER shows something the narrator hasn't introduced.
+
+═══════════════════════════════════════════════════════════════════════
+LENGTH RULES (HARD CONSTRAINTS — DO NOT VIOLATE)
+═══════════════════════════════════════════════════════════════════════
+
+- Total video length: 95-110 seconds (target 100 seconds).
+- Section 1 (Hook): 4-5 beats, ~22 seconds, ~50-65 words total.
+- Section 2 (Build): 6-8 beats, ~40 seconds, ~85-110 words total.
+- Section 3 (Worked Example): 5-6 beats, ~35 seconds, ~70-90 words total.
+- Each individual beat sentence: 5-15 words MAXIMUM. Short. Punchy. Visual.
+- Narrator speaks ~150 words per minute → so 100 sec ≈ 250 words TOTAL.
+
+═══════════════════════════════════════════════════════════════════════
+OUTPUT FORMAT: Valid JSON only (no markdown, no ```json blocks)
+═══════════════════════════════════════════════════════════════════════
+
 {
   "topic": "<topic name>",
   "sections": [
@@ -48,59 +74,100 @@ STRUCTURE (exactly 3 sections):
       "id": 1,
       "title": "Introduction",
       "section_type": "introduction",
-      "narration": "15-20 second narration (40-55 words). Hook the viewer with a question or surprising fact. Then state what they'll learn. Be conversational, not academic.",
+      "narration": "Concatenated beat sentences for TTS. Each sentence ends with a period.",
+      "beats": [
+        {
+          "sentence": "Short narration sentence (5-15 words).",
+          "visual": "Concrete visual description: WHAT shape/object appears, WHERE it sits, in WHAT color, doing WHAT animation. Be specific enough that a Manim coder can implement it directly."
+        }
+      ],
       "blackboard_notes": ["Key term", "Main formula"],
-      "visual_instructions": [
-        "Animated reveal of the topic with a striking visual",
-        "Show ONE main formula or definition",
-        "NO walls of text -- the visual carries the meaning"
-      ],
       "visual_mode": "2D"
     },
-    {
-      "id": 2,
-      "title": "Concept Explanation",
-      "section_type": "concept",
-      "narration": "25-35 second narration (70-95 words). Walk through HOW the concept works using the visual. Reference what the viewer SEES, like 'notice how this side grows...'.",
-      "blackboard_notes": ["Step 1", "Step 2", "Key insight"],
-      "visual_instructions": [
-        "Build the diagram progressively (layer by layer)",
-        "Use color coding: BLUE for given, GREEN for result, YELLOW for emphasis",
-        "Animate at least 4 distinct phases (transform/morph/move) -- not static"
-      ],
-      "visual_mode": "2D"
-    },
-    {
-      "id": 3,
-      "title": "Worked Example",
-      "section_type": "examples",
-      "narration": "25-35 second narration (70-95 words). Solve ONE concrete example step-by-step. End with the answer highlighted dramatically.",
-      "blackboard_notes": ["Example: ...", "Step 1: ...", "Step 2: ...", "Answer: ..."],
-      "visual_instructions": [
-        "Show the problem with concrete numbers, not abstract variables",
-        "Animate each step transforming into the next (TransformMatchingTex)",
-        "Final answer in a YELLOW SurroundingRectangle with Indicate() flash"
-      ],
-      "visual_mode": "2D"
-    }
+    ...
   ]
 }
 
-RULES:
-- EXACTLY 3 sections.
-- Total video length MUST be UNDER 90 seconds. Short and impactful.
-- Narration should reference what's being shown ("watch as this circle rotates...").
-- Use 2D unless 3D is genuinely required (3D geometry, vectors in space).
-- Conversational tone -- imagine talking to a friend, not lecturing a class.
-- blackboard_notes: SHORT terms only (< 15 chars each). NOT full sentences.
-- visual_instructions: action-focused, not description-focused.
-- Section 3: ONE worked example only -- skip practice questions to keep video short.
-- Output ONLY the JSON object. No explanation, no markdown.
+═══════════════════════════════════════════════════════════════════════
+BEAT WRITING RULES
+═══════════════════════════════════════════════════════════════════════
+
+1. EACH beat's "sentence" must directly REFERENCE what its "visual" shows.
+   ✗ BAD beat:
+       sentence: "Binary search is efficient."
+       visual: "Show array of 8 numbers in blue."
+   ✓ GOOD beat:
+       sentence: "Here's a sorted array of 8 numbers."
+       visual: "8 blue squares in a row, each labeled 1,3,5,7,9,11,13,15. Created left to right."
+
+2. NEVER write abstract narration. Always anchor to a concrete visual.
+   ✗ BAD: "Binary search is a powerful algorithm used in many domains."
+   ✓ GOOD: "We want to find the number 11."
+
+3. Use deictic language ("this", "here", "now", "watch") to lock viewer attention.
+   Examples: "Now we check the middle." / "Watch as the range shrinks."
+
+4. NEVER let the visual run ahead of OR behind the narration. They are siblings.
+
+5. Section 1 hooks the viewer with a concrete scenario (NOT a definition).
+   Section 2 builds the mechanism step by step (using the same scenario).
+   Section 3 walks through ONE concrete example with real numbers, ending with
+   the final answer in a yellow box.
+
+═══════════════════════════════════════════════════════════════════════
+VISUAL DESCRIPTION RULES (THIS IS WHAT MANIM WILL READ)
+═══════════════════════════════════════════════════════════════════════
+
+Every "visual" field must answer:
+  - WHAT is on screen (shapes, equations, numbers)
+  - WHERE on screen (left, right, center, above, below)
+  - WHAT COLOR (BLUE for inputs, GREEN for results, YELLOW for emphasis, RED for warnings)
+  - WHAT ANIMATION (Create, Transform, Indicate, Flash, Move, Highlight)
+  - WHAT TO REMOVE/REPLACE from the previous beat
+
+Examples of well-written visuals:
+  ✓ "Title 'Binary Search' (yellow) appears top-center, then fades."
+  ✓ "Array of 8 blue squares with numbers 1,3,5,7,9,11,13,15 created left-to-right at center."
+  ✓ "A red arrow appears above the 4th square (number 7), with label 'mid'."
+  ✓ "The first 4 squares fade to gray; remaining 4 squares stay blue."
+  ✓ "Equation 'low=5, high=8' fades in on the left side."
+  ✓ "Yellow box surrounds answer '7' and pulses (Indicate)."
+
+═══════════════════════════════════════════════════════════════════════
+TONE RULES
+═══════════════════════════════════════════════════════════════════════
+
+- Conversational, not lecturing. Talk like a smart friend.
+- Use second person ("you", "we") not third ("the student should...").
+- Short sentences only. No commas joining 3 clauses.
+- No filler ("So basically", "Now what we have is...").
+- No jargon without showing it visually first.
+
+═══════════════════════════════════════════════════════════════════════
+RULES SUMMARY
+═══════════════════════════════════════════════════════════════════════
+
+- EXACTLY 3 sections, EACH with a "beats" array (4-8 beats per section).
+- "narration" field = sentences from beats joined by single spaces (no extra commentary).
+- "visual" descriptions must be CONCRETE and IMPLEMENTABLE in Manim.
+- Total video ≥ 95 seconds, ≤ 110 seconds.
+- Each beat sentence: 5-15 words. NO LONGER.
+- blackboard_notes: 2-4 short terms (< 15 chars each). NOT full sentences.
+- visual_mode: "2D" unless topic genuinely needs 3D.
+- Output ONLY the JSON object. No markdown. No prose. No explanation.
 PROMPT;
 
-        $user = "Create a SHORT, ENGAGING 3-section video script for: \"{$topic}\"\n\n"
-            . "Total video length should be UNDER 90 SECONDS. Punchy narration. Visual-first.\n"
-            . "Output ONLY valid JSON. Exactly 3 sections.";
+        $user = "Write a beat-synchronized animation script for: \"{$topic}\"\n\n"
+            . "REQUIREMENTS (do not relax these):\n"
+            . "  - Total video length: 95-110 seconds (target 100s).\n"
+            . "  - 3 sections with 4-8 beats each.\n"
+            . "  - Every beat = one short sentence + one CONCRETE visual that matches it.\n"
+            . "  - Each beat sentence: 5-15 words MAX.\n"
+            . "  - Total word count: about 250 words across all sections.\n"
+            . "  - Section 1 = concrete hook scenario, NOT a definition.\n"
+            . "  - Section 2 = build the mechanism step-by-step using that scenario.\n"
+            . "  - Section 3 = ONE worked example with actual numbers, final answer in yellow box.\n\n"
+            . "OUTPUT: ONLY valid JSON. Exactly the structure shown in the system prompt.";
 
         $result = $this->callLLM($this->scriptModel, $system, $user, 0.7, 3000);
 
@@ -123,10 +190,10 @@ PROMPT;
     // PHASE 2: Generate Manim Code
     // ─────────────────────────────────────────────────────────
 
-    public function generateManimCode(array $script, array $sectionDurations): ?string
+    public function generateManimCode(array $script, array $audioSections): ?string
     {
         $system = $this->getManimSystemPrompt();
-        $user = $this->buildManimUserPrompt($script, $sectionDurations);
+        $user = $this->buildManimUserPrompt($script, $audioSections);
 
         $raw = $this->callLLM($this->codeModel, $system, $user, 0.2, 8192);
 
@@ -196,11 +263,27 @@ RIGHT approach (engaging):
   - Color-coded elements that highlight as concepts are introduced
   - At MOST 1 short label per visual, NOT a paragraph
 
-==============  ANIMATION STRATEGY (CRITICAL)  ==============
+==============  BEAT-LEVEL AUDIO SYNC (HIGHEST PRIORITY)  ==============
 
-Each section should have AT LEAST 4-6 distinct ANIMATED transitions per 20 seconds.
-NO long static waits. If a self.wait() exceeds 2 seconds, replace with a continuous
-animation (Rotate, MoveAlongPath, AnimationGroup, Indicate, FocusOn, Wiggle, Flash).
+The narration is split into "beats" -- one beat per sentence. The user prompt
+gives you the EXACT DURATION (in seconds) of each beat. You MUST keep
+animations within these beat boundaries.
+
+Per beat:
+  1. Pick ONE coherent visual moment that matches the sentence.
+  2. Total run_time= across all self.play() calls in that beat <= 70% of beat_duration.
+  3. End the beat with self.wait(remaining) so audio finishes naturally.
+
+NEVER:
+  - Let animations spill across multiple beats (audio + video desync).
+  - Skip self.wait() at the end of a beat (video fast-forwards past audio).
+  - Use self.wait() longer than the beat itself.
+
+==============  ANIMATION STRATEGY  ==============
+
+Within EACH beat, use rich animations (Transform, ValueTracker, Indicate, Flash, etc.).
+Even short beats (1-2 sec) can have an animation + brief wait.
+Long beats (4+ sec) should have 2-3 staggered animations + wait.
 
 PREFERRED ANIMATIONS (use these heavily):
   - Create / DrawBorderThenFill -- shapes appearing
@@ -341,7 +424,9 @@ If you have leftover time, ADD MORE ANIMATIONS (Indicate, Flash, color shifts on
         MathTex(r"\frac{a}", "+", r"c")      # WRONG (breaks braces)
 9.  Keep labels <= 15 chars. Body text on screen <= 40 chars per line.
 10. Every self.play() call MUST have run_time= set explicitly.
-11. self.wait() must never exceed 2 seconds. Prefer animations over waits.
+11. self.wait() should match the leftover time of the current BEAT
+    (beat_duration minus your animations). This is what keeps narration in sync.
+    Do NOT cap waits at 2 seconds inside a beat -- the beat duration is the master.
 12. To clear the screen between sections:
         if self.mobjects:
             self.play(*[FadeOut(m) for m in self.mobjects], run_time=0.4)
@@ -362,36 +447,89 @@ PROMPT;
     // Build user prompt for Manim code generation
     // ─────────────────────────────────────────────────────────
 
-    private function buildManimUserPrompt(array $script, array $durations): string
+    private function buildManimUserPrompt(array $script, array $audioSections): string
     {
-        $sections = '';
+        // Build a per-section block with per-sentence "beats" — each beat has a duration
+        // the Manim code MUST respect so audio and animation stay in sync.
+        $sectionsTxt = '';
+        $totalDuration = 0.0;
+
         foreach ($script['sections'] as $i => $sec) {
-            $dur = $durations[$i] ?? 20.0;
+            $audio = $audioSections[$i] ?? null;
+            $sectionDur = $audio['duration'] ?? 20.0;
+            $beats = $audio['beats'] ?? [];
+
             $notes = is_array($sec['blackboard_notes'] ?? null)
                 ? implode(', ', $sec['blackboard_notes'])
                 : ($sec['blackboard_notes'] ?? '');
-            $visuals = is_array($sec['visual_instructions'] ?? null)
-                ? implode('; ', $sec['visual_instructions'])
-                : ($sec['visual_instructions'] ?? '');
 
-            $sections .= "--- SECTION {$sec['id']}: {$sec['title']} ---\n"
-                . "Duration: {$dur}s\n"
-                . "Narration: \"{$sec['narration']}\"\n"
+            $sectionsTxt .= "--- SECTION {$sec['id']}: {$sec['title']} ---\n"
+                . "TOTAL SECTION DURATION: {$sectionDur}s (must match exactly)\n"
                 . "Notes: {$notes}\n"
-                . "Visuals: {$visuals}\n\n";
+                . "BEATS (one per sentence — animate the SPECIFIC visual shown below,\n"
+                . "       not something else, then call self.wait() to fill remaining beat time):\n";
+
+            foreach ($beats as $bi => $beat) {
+                $bnum = $bi + 1;
+                $btext = str_replace(["\n", '"'], [' ', "'"], $beat['text']);
+                $bvisual = str_replace(["\n", '"'], [' ', "'"], $beat['visual'] ?? '');
+                $bdur = $beat['duration'];
+                $sectionsTxt .= "   Beat {$bnum} ({$bdur}s)\n";
+                $sectionsTxt .= "     NARRATION SAYS: \"{$btext}\"\n";
+                if ($bvisual !== '') {
+                    $sectionsTxt .= "     ANIMATE THIS:   {$bvisual}\n";
+                }
+            }
+            $sectionsTxt .= "\n";
+
+            $totalDuration += $sectionDur;
         }
 
-        $totalDuration = array_sum($durations);
-
         return "Topic: \"{$script['topic']}\"\n\n"
-            . "SECTIONS:\n{$sections}"
-            . "Total duration: ~{$totalDuration}s\n\n"
+            . "═══════════════════════════════════════════════════════════════\n"
+            . "BEAT-LEVEL SYNC + VISUAL LOCK (MUST FOLLOW STRICTLY):\n"
+            . "═══════════════════════════════════════════════════════════════\n\n"
+            . "Each beat tells you THREE things:\n"
+            . "  - Duration (in seconds)\n"
+            . "  - What the NARRATOR is saying\n"
+            . "  - What you MUST animate during that sentence\n"
+            . "\n"
+            . "RULES:\n"
+            . "  1. Animate EXACTLY what 'ANIMATE THIS' says — same shapes, positions,\n"
+            . "     colors, numbers. Do not invent unrelated visuals.\n"
+            . "  2. The total run_time= across all self.play() calls in a beat must be\n"
+            . "     LESS than the beat's duration.\n"
+            . "  3. After your animations, ALWAYS add self.wait(remaining) so the audio\n"
+            . "     and animation end together.\n"
+            . "\n"
+            . "FORMULA (apply per beat):\n"
+            . "  animation_time = sum of all run_time= values you used in this beat\n"
+            . "  wait_time      = max(0.3, beat_duration - animation_time - 0.1)\n"
+            . "  self.wait(wait_time)   # CRITICAL: this is what keeps audio + video in sync\n"
+            . "\n"
+            . "Use 60-70% of each beat's time on animations (run_time) and 30-40% on self.wait().\n"
+            . "Never let total animation time exceed the beat duration -- audio will lag video.\n"
+            . "Never skip self.wait() at the end of a beat -- video will fast-forward past audio.\n"
+            . "\n"
+            . "Structure your construct() method as one Python comment + one block per beat:\n"
+            . "  # ── Beat 1 (2.3s): \"What is binary search?\" ──\n"
+            . "  self.play(Write(title), run_time=1.0)\n"
+            . "  self.wait(1.2)   # 2.3 - 1.0 - 0.1 = 1.2\n"
+            . "\n"
+            . "  # ── Beat 2 (3.1s): \"It splits the array in half...\" ──\n"
+            . "  self.play(Create(array), run_time=1.0)\n"
+            . "  self.play(arrow.animate.shift(RIGHT), run_time=1.0)\n"
+            . "  self.wait(1.0)   # 3.1 - 2.0 - 0.1 = 1.0\n"
+            . "\n"
+            . "SECTIONS:\n{$sectionsTxt}"
+            . "Total target duration: ~{$totalDuration}s\n\n"
             . "REQUIREMENTS:\n"
-            . "1. The last section MUST have at least ONE fully worked example with step-by-step solution.\n"
-            . "2. Highlight the final answer with a YELLOW SurroundingRectangle.\n"
-            . "3. FadeOut ALL objects before each new section.\n"
-            . "4. Match each section's target duration with self.wait() and run_time.\n\n"
-            . "OUTPUT: Python code only.";
+            . "1. Strictly respect each beat's duration -- do not let animations spill over.\n"
+            . "2. The last section MUST end with a worked example answer in a YELLOW SurroundingRectangle.\n"
+            . "3. FadeOut ALL objects (if self.mobjects:) before each new section.\n"
+            . "4. Add a Python comment '# ── Beat N (Xs): \"narration\" ──' before every beat.\n"
+            . "5. Every self.play() call MUST have run_time= set explicitly.\n\n"
+            . "OUTPUT: Python code only. No markdown fences. No prose.";
     }
 
     // ─────────────────────────────────────────────────────────

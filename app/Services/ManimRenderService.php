@@ -118,8 +118,19 @@ class ManimRenderService
         }
 
         // Step 2: Merge video + audio
+        //
+        // Why we re-encode the video (instead of -c:v copy):
+        //   - Manim renders MP4s where the moov atom (metadata index) is at the END
+        //     of the file. Browsers can't seek/scrub until the whole file is buffered.
+        //   - We re-encode with libx264 + -movflags +faststart, which moves the moov
+        //     atom to the START so the browser can seek instantly.
+        //   - We also force +genpts so timestamps are clean across the audio/video mux.
         $cmd = sprintf(
-            'ffmpeg -y -i %s -i %s -c:v copy -c:a aac -b:a 128k -shortest -map 0:v:0 -map 1:a:0 %s 2>&1',
+            'ffmpeg -y -fflags +genpts -i %s -i %s '
+            . '-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p '
+            . '-c:a aac -b:a 128k '
+            . '-movflags +faststart '
+            . '-shortest -map 0:v:0 -map 1:a:0 %s 2>&1',
             escapeshellarg($videoPath),
             escapeshellarg($concatAudio),
             escapeshellarg($outputPath)

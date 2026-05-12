@@ -7,6 +7,8 @@
          x-data="{
              videoStatus: '{{ $video->status }}',
              videoUrl: {!! $videoUrl ? "'" . e($videoUrl) . "'" : 'null' !!},
+             subtitleUrl: {!! $subtitleUrl ? "'" . e($subtitleUrl) . "'" : 'null' !!},
+             subtitlesOn: false,
              videoId: {{ $video->id }},
              errorMsg: '{{ addslashes($video->error_message ?? '') }}',
              progressPhase: '{{ addslashes($video->progress_phase ?? 'Initializing') }}',
@@ -39,6 +41,7 @@
 
                      if (data.status === 'completed') {
                          this.videoUrl = data.video_url;
+                         this.subtitleUrl = data.subtitle_url || null;
                          this.progressPercent = 100;
                          clearInterval(this.pollInterval);
                          clearInterval(this.timeInterval);
@@ -48,6 +51,16 @@
                          clearInterval(this.timeInterval);
                      }
                  } catch (e) {}
+             },
+
+             toggleSubtitles($refs) {
+                 this.subtitlesOn = !this.subtitlesOn;
+                 const video = $refs.videoPlayer;
+                 if (!video) return;
+                 // Toggle all native text tracks
+                 for (let i = 0; i < video.textTracks.length; i++) {
+                     video.textTracks[i].mode = this.subtitlesOn ? 'showing' : 'hidden';
+                 }
              },
 
              formatTime(seconds) {
@@ -73,8 +86,38 @@
 
                     {{-- ── COMPLETED: Show real video player ── --}}
                     <template x-if="videoStatus === 'completed' && videoUrl">
-                        <div class="aspect-video bg-black rounded-xl overflow-hidden shadow-lg">
-                            <video :src="videoUrl" controls class="w-full h-full" autoplay></video>
+                        <div class="relative aspect-video bg-black rounded-xl overflow-hidden shadow-lg group">
+                            <video
+                                x-ref="videoPlayer"
+                                :src="videoUrl"
+                                controls
+                                crossorigin="anonymous"
+                                class="w-full h-full"
+                                autoplay>
+                                <template x-if="subtitleUrl">
+                                    <track
+                                        kind="subtitles"
+                                        :src="subtitleUrl"
+                                        srclang="en"
+                                        label="English"
+                                        default>
+                                </template>
+                            </video>
+
+                            {{-- Custom CC toggle (overlays bottom-right above video controls when hovered) --}}
+                            <template x-if="subtitleUrl">
+                                <button
+                                    @click="toggleSubtitles($refs)"
+                                    class="absolute top-3 right-3 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm transition-all opacity-90 hover:opacity-100"
+                                    :class="subtitlesOn ? 'bg-white text-gray-900' : 'bg-black/60 text-white border border-white/30'"
+                                    :title="subtitlesOn ? 'Hide subtitles' : 'Show subtitles'">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="6" width="20" height="14" rx="2" ry="2"/>
+                                        <path d="M7 12h3M7 16h6M14 12h3M16 16h1"/>
+                                    </svg>
+                                    <span x-text="subtitlesOn ? 'CC On' : 'CC'"></span>
+                                </button>
+                            </template>
                         </div>
                     </template>
 

@@ -1,6 +1,16 @@
 @props(['recentChats' => []])
 
 <aside class="fixed top-0 left-0 h-screen bg-white border-r border-gray-100 z-40 flex flex-col transition-all duration-300 ease-in-out"
+       x-data="{
+           activeChatId: (new URLSearchParams(window.location.search)).get('chat'),
+           syncFromUrl() {
+               this.activeChatId = (new URLSearchParams(window.location.search)).get('chat');
+           }
+       }"
+       x-init="syncFromUrl()"
+       @load-conversation.window="activeChatId = String($event.detail.id)"
+       @new-topic.window="activeChatId = null"
+       @popstate.window="syncFromUrl()"
        :class="{
            'w-64': sidebarExpanded,
            'w-16': !sidebarExpanded,
@@ -21,20 +31,40 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 px-2 space-y-5 overflow-y-auto pb-4">
+    <nav class="flex-1 px-2 space-y-5 overflow-y-auto pb-4 sidebar-scroll">
 
         {{-- ──────────────  GROUP 1: LEARN  ────────────── --}}
         <div>
             <h3 x-show="sidebarExpanded" class="px-3 text-[14px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Learn</h3>
             <div class="space-y-0.5">
-                <x-sidebar-item href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')" label="Home">
-                    <x-slot:icon>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                {{-- Home: active only when on /dashboard AND no chat is open --}}
+                @php $onDashboard = request()->routeIs('dashboard'); @endphp
+                <a href="{{ route('dashboard') }}"
+                   x-show="sidebarExpanded"
+                   @click="activeChatId = null"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors"
+                   :class="(@js($onDashboard) && !activeChatId) ? 'text-purple-600 font-semibold bg-purple-50' : 'text-gray-700 hover:bg-purple-50 hover:text-purple-600'">
+                    <span class="w-7 h-7 flex items-center justify-center shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
-                    </x-slot:icon>
-                </x-sidebar-item>
+                    </span>
+                    <span class="text-[15px] font-medium">Home</span>
+                </a>
+                <a href="{{ route('dashboard') }}"
+                   x-show="!sidebarExpanded"
+                   title="Home"
+                   @click="activeChatId = null"
+                   class="flex items-center justify-center p-2.5 rounded-xl transition-colors"
+                   :class="(@js($onDashboard) && !activeChatId) ? 'bg-purple-100 text-purple-600' : 'text-gray-600 hover:bg-purple-50 hover:text-purple-600'">
+                    <span class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </span>
+                </a>
 
                 <x-sidebar-item href="{{ route('progress') }}" :active="request()->routeIs('progress')" label="Your Progress">
                     <x-slot:icon>
@@ -110,8 +140,9 @@
                     <div class="space-y-0.5">
                         <template x-for="chat in chats" :key="chat.id">
                             <a :href="'/dashboard?chat=' + chat.id"
-                               @click="if (window.location.pathname === '/dashboard') { $event.preventDefault(); $dispatch('load-conversation', { id: chat.id }); }"
-                               class="block px-3 py-2.5 text-[15px] font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors truncate"
+                               @click="activeChatId = String(chat.id); if (window.location.pathname === '/dashboard') { $event.preventDefault(); $dispatch('load-conversation', { id: chat.id }); }"
+                               class="block px-3 py-2.5 text-[15px] font-medium rounded-lg cursor-pointer transition-colors truncate"
+                               :class="String(activeChatId) === String(chat.id) ? 'text-purple-600 font-semibold bg-purple-50' : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'"
                                :title="chat.title"
                                x-text="chat.title">
                             </a>
@@ -239,4 +270,14 @@
 
 <style>
     [x-cloak] { display: none !important; }
+    /* Hide scrollbar on the sidebar nav but keep it scrollable */
+    .sidebar-scroll {
+        scrollbar-width: none;        /* Firefox */
+        -ms-overflow-style: none;     /* IE / old Edge */
+    }
+    .sidebar-scroll::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;                /* Chrome, Safari, Opera */
+    }
 </style>

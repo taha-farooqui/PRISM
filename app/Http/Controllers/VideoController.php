@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Conversation;
 use App\Models\GeneratedVideo;
 use App\Models\Message;
+use App\Services\ContentSafetyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,17 @@ class VideoController extends Controller
         ]);
 
         $topic = $request->input('topic');
+
+        // Content safety filter — reject vulgar / adult / harmful topics before
+        // we burn API credits, audio synthesis, or rendering minutes on them.
+        $safety = (new ContentSafetyService())->check($topic);
+        if (!$safety['allowed']) {
+            Log::warning("[Video] Rejected topic for user " . Auth::id() . " (layer={$safety['layer']}): " . substr($topic, 0, 120));
+            return response()->json([
+                'error' => $safety['reason'],
+                'blocked' => true,
+            ], 422);
+        }
 
         // Create DB record
         $video = GeneratedVideo::create([
@@ -105,6 +117,7 @@ class VideoController extends Controller
 
         if ($video->status === 'completed' && $video->video_path) {
             $response['video_url'] = Storage::url($video->video_path);
+            $response['subtitle_url'] = $video->subtitle_path ? Storage::url($video->subtitle_path) : null;
             $response['progress_percent'] = 100;
         } elseif ($video->status === 'failed') {
             $response['error'] = $video->error_message;

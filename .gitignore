@@ -56,9 +56,12 @@ __pycache__/
 # ── Old python prototype (kept out of git) ──
 /PRISM-B/
 
-# ── Generated FYP report scripts (not source code) ──
+# ── Generated FYP report & presentation scripts (not source code) ──
 /generate_final_report.py
+/generate_presentation.py
 /PRISM_Final_Report.docx
+/PRISM_FYP_Presentation.pptx
+*.pptx
 
 # ── Local docs not part of the codebase ──
 *.docx

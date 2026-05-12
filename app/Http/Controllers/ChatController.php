@@ -179,6 +179,7 @@ class ChatController extends Controller
                     'topic' => $video->topic,
                     'status' => $video->status,
                     'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'subtitle_url' => $video->subtitle_path ? Storage::url($video->subtitle_path) : null,
                     'error' => $video->error_message,
                 ];
             }

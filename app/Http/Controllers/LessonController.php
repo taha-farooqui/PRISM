@@ -8,8 +8,10 @@ use App\Models\Course;
 use App\Models\GeneratedVideo;
 use App\Models\Lesson;
 use App\Models\Message;
+use App\Services\ContentSafetyService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
@@ -25,8 +27,24 @@ class LessonController extends Controller
             ->latest()
             ->first();
 
-        // If no video exists, create one and start generation
+        // If no video exists, content-check the lesson title before spawning generation
         if (!$video) {
+            $safety = (new ContentSafetyService())->check($lesson->title);
+            if (!$safety['allowed']) {
+                Log::warning("[Lesson] Rejected lesson video for user " . Auth::id() . ": {$lesson->title}");
+                // Create a failed record so the lesson page shows the user-facing error
+                $video = GeneratedVideo::create([
+                    'user_id' => Auth::id(),
+                    'topic' => $lesson->title,
+                    'quality' => 'l',
+                    'status' => 'failed',
+                    'error_message' => $safety['reason'],
+                ]);
+                $videoUrl = null;
+                $subtitleUrl = null;
+                return view('lessons.show', compact('course', 'lesson', 'video', 'videoUrl', 'subtitleUrl'));
+            }
+
             $video = GeneratedVideo::create([
                 'user_id' => Auth::id(),
                 'topic' => $lesson->title,
@@ -120,8 +138,9 @@ class LessonController extends Controller
             }
         }
 
-        $videoUrl = $video->video_path ? \Storage::url($video->video_path) : null;
+        $videoUrl = $video->video_path ? Storage::url($video->video_path) : null;
+        $subtitleUrl = $video->subtitle_path ? Storage::url($video->subtitle_path) : null;
 
-        return view('lessons.show', compact('course', 'lesson', 'video', 'videoUrl'));
+        return view('lessons.show', compact('course', 'lesson', 'video', 'videoUrl', 'subtitleUrl'));
     }
 }
